@@ -1,6 +1,10 @@
 #include <stdlib.h>
 #include <math.h>
-#include <GLUT/glut.h>
+#ifdef __APPLE__
+#  include <GLUT/glut.h>
+#else
+#  include <GL/glut.h>
+#endif
 
 /* 曲線の刻み */
 #define STEP 100
