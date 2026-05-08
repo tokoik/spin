@@ -78,7 +78,7 @@ static void qrot(double r[], double q[])
   r[15] = 1.0;
 }
 
-static void display(void)
+static void display()
 {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   
@@ -122,7 +122,7 @@ static void resize(int w, int h)
   glMatrixMode(GL_MODELVIEW);
 }
 
-static void idle(void)
+static void idle()
 {
   glutPostRedisplay();
 }
@@ -190,7 +190,7 @@ static void keyboard(unsigned char key, int x, int y)
   }
 }
 
-static void init(void)
+static void init()
 {
   /* 初期設定 */
   glClearColor(1.0, 1.0, 1.0, 1.0);
@@ -199,7 +199,7 @@ static void init(void)
   qrot(rt, cq);
 }
 
-static void scene(void)
+static void scene()
 {
   /* 表示図形をディスプレイリストに登録 */
   object = glGenLists(1);
