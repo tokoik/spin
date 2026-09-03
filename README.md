@@ -11,27 +11,32 @@
 ## 2. 対応環境
 
 - Windows / macOS / Linux
-- OpenGL 1.1 以上
-- GLUT / FreeGLUT
+- CMake 3.22 以上
+- C++17 対応コンパイラ
+- OpenGL 2.1 以上 (または必要なプロファイル)
+- 外部ライブラリ: FreeGLUT (CMake の FetchContent により自動取得)
 
 ## 3. ビルド手順
 
-### macOS / Linux (Makefile)
+### Windows / macOS / Linux (CMake)
 
 ```bash
-make
+cmake -B build
+cmake --build build --config Release
 ```
-
-### Windows (Visual Studio)
-
-新規コンソールプロジェクトを作成し、`main.cpp` を追加して OpenGL / GLUT をリンクしてビルドします。
 
 ## 4. 起動方法
 
-ビルドによって生成された実行ファイルを起動します。
+### Windows
+
+```powershell
+.\build\Release\spin.exe
+```
+
+### macOS / Linux
 
 ```bash
-./spin
+./build/spin
 ```
 
 ## 5. 操作方法
