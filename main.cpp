@@ -1,4 +1,4 @@
-﻿#include <stdlib.h>
+#include <stdlib.h>
 #include <math.h>
 #ifdef __APPLE__
 #  include <GLUT/glut.h>
@@ -78,7 +78,7 @@ static void qrot(double r[], double q[])
   r[15] = 1.0;
 }
 
-static void display()
+static void display(void)
 {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   
@@ -122,7 +122,7 @@ static void resize(int w, int h)
   glMatrixMode(GL_MODELVIEW);
 }
 
-static void idle()
+static void idle(void)
 {
   glutPostRedisplay();
 }
@@ -190,7 +190,7 @@ static void keyboard(unsigned char key, int x, int y)
   }
 }
 
-static void init()
+static void init(void)
 {
   /* 初期設定 */
   glClearColor(1.0, 1.0, 1.0, 1.0);
@@ -199,7 +199,7 @@ static void init()
   qrot(rt, cq);
 }
 
-static void scene()
+static void scene(void)
 {
   /* 表示図形をディスプレイリストに登録 */
   object = glGenLists(1);

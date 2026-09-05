@@ -1,140 +1,75 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.22)
 
-project(spin CXX)
+project(spin LANGUAGES CXX)
 
-# C++ のバージョン設定。標準的な要件を満たすため C++14 としています（必要に応じて変更可）
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(SOURCES "main.cpp")
+if(MSVC)
+  add_compile_options("/utf-8")
+endif()
+
+set(SOURCES
+  main.cpp
+)
+
+set(FETCHCONTENT_BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libs")
 
 if(APPLE)
-    # macOS: アプリケーションバンドルを作成
-    add_executable(${PROJECT_NAME} MACOSX_BUNDLE ${SOURCES})
+  add_executable(${PROJECT_NAME} MACOSX_BUNDLE ${SOURCES})
 
-    # Info.plist が存在しない場合は作成する
-    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/Info.plist")
-        set(INFO_PLIST_CONTENT "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
-<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">
-<plist version=\"1.0\">
-<dict>
-    <key>CFBundleDevelopmentRegion</key>
-    <string>English</string>
-    <key>CFBundleExecutable</key>
-    <string>\${EXECUTABLE_NAME}</string>
-    <key>CFBundleIdentifier</key>
-    <string>com.yourcompany.\${PRODUCT_NAME:identifier}</string>
-    <key>CFBundleInfoDictionaryVersion</key>
-    <string>6.0</string>
-    <key>CFBundlePackageType</key>
-    <string>APPL</string>
-    <key>CFBundleSignature</key>
-    <string>????</string>
-    <key>CFBundleVersion</key>
-    <string>1.0</string>
-</dict>
-</plist>
-")
-        file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/Info.plist" "${INFO_PLIST_CONTENT}")
-    endif()
+  find_library(GLUT_LIBRARY GLUT)
+  find_library(OPENGL_LIBRARY OpenGL)
+  target_link_libraries(${PROJECT_NAME} PRIVATE ${GLUT_LIBRARY} ${OPENGL_LIBRARY})
 
-    set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/Info.plist")
-    
-    # フレームワークの検索
-    find_library(OPENGL_FRAMEWORK OpenGL REQUIRED)
-    find_library(GLUT_FRAMEWORK GLUT REQUIRED)
-
-    target_link_libraries(${PROJECT_NAME} PRIVATE
-        ${OPENGL_FRAMEWORK}
-        ${GLUT_FRAMEWORK}
-    )
-
-    # Xcodeで開いてRunした時にアプリが起動するようにスキームを生成
-    set_target_properties(${PROJECT_NAME} PROPERTIES
-        XCODE_GENERATE_SCHEME ON
-    )
+  set_target_properties(${PROJECT_NAME} PROPERTIES
+    MACOSX_BUNDLE TRUE
+    MACOSX_BUNDLE_GUI_IDENTIFIER "com.tokoik.${PROJECT_NAME}"
+    MACOSX_BUNDLE_BUNDLE_NAME "${PROJECT_NAME}"
+    MACOSX_BUNDLE_BUNDLE_VERSION "1.0"
+    MACOSX_BUNDLE_SHORT_VERSION_STRING "1.0"
+    XCODE_GENERATE_SCHEME ON
+    XCODE_SCHEME_WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+  )
+  set_property(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}" PROPERTY XCODE_GENERATE_SCHEME ON)
 
 elseif(WIN32)
-    # Windows
-    add_executable(${PROJECT_NAME} ${SOURCES})
+  add_executable(${PROJECT_NAME} ${SOURCES})
 
-    # プログラム名をスタートアッププロジェクトに設定
-    set_property(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}" PROPERTY VS_STARTUP_PROJECT "${PROJECT_NAME}")
+  include(FetchContent)
+  FetchContent_Declare(
+    freeglut
+    GIT_REPOSITORY https://github.com/FreeGLUTProject/freeglut.git
+    GIT_TAG master
+  )
+  set(FREEGLUT_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+  set(FREEGLUT_BUILD_DEMOS OFF CACHE BOOL "" FORCE)
+  FetchContent_MakeAvailable(freeglut)
 
-    # glext.h と khrplatform.h のダウンロード設定
-    set(GLEXT_H_DIR "${CMAKE_BINARY_DIR}/opengl_registry")
-    set(GLEXT_H_FILE "${GLEXT_H_DIR}/glext.h")
-    if(NOT EXISTS "${GLEXT_H_FILE}")
-        message(STATUS "Downloading glext.h from OpenGL Registry...")
-        file(DOWNLOAD "https://registry.khronos.org/OpenGL/api/GL/glext.h" "${GLEXT_H_FILE}" SHOW_PROGRESS)
-    endif()
+  find_package(OpenGL REQUIRED)
 
-    set(KHR_DIR "${GLEXT_H_DIR}/KHR")
-    set(KHR_H_FILE "${KHR_DIR}/khrplatform.h")
-    if(NOT EXISTS "${KHR_H_FILE}")
-        message(STATUS "Downloading khrplatform.h from OpenGL Registry...")
-        file(DOWNLOAD "https://registry.khronos.org/EGL/api/KHR/khrplatform.h" "${KHR_H_FILE}" SHOW_PROGRESS)
-    endif()
+  target_include_directories(${PROJECT_NAME} PRIVATE
+    "${freeglut_SOURCE_DIR}/include"
+  )
 
-    # freeglut をソースコードからビルド
-    set(FREEGLUT_BUILD_DEMOS OFF CACHE BOOL "Do not build freeglut demos" FORCE)
-    set(FREEGLUT_BUILD_SHARED_LIBS ON CACHE BOOL "Build freeglut as shared library" FORCE)
-    set(FREEGLUT_BUILD_STATIC_LIBS OFF CACHE BOOL "Do not build freeglut static library" FORCE)
+  target_link_libraries(${PROJECT_NAME} PRIVATE freeglut_static OpenGL::GL OpenGL::GLU)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE FREEGLUT_STATIC)
 
-    include(FetchContent)
-    FetchContent_Declare(
-        freeglut
-        GIT_REPOSITORY "https://github.com/freeglut/freeglut.git"
-        GIT_TAG "master"
-    )
-    FetchContent_MakeAvailable(freeglut)
+  set_property(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}" PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
+  set_target_properties(${PROJECT_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:${PROJECT_NAME}>")
 
-    target_include_directories(${PROJECT_NAME} PRIVATE
-        "${freeglut_SOURCE_DIR}/include"
-        "${freeglut_SOURCE_DIR}/include/GL"
-        "${GLEXT_H_DIR}"
-        "${CMAKE_CURRENT_SOURCE_DIR}"
-    )
+else()
+  # Linux
+  add_executable(${PROJECT_NAME} ${SOURCES})
 
-    target_link_libraries(${PROJECT_NAME} PRIVATE freeglut opengl32.lib glu32.lib)
+  set(OpenGL_GL_PREFERENCE "LEGACY")
+  find_package(OpenGL REQUIRED)
+  find_package(GLUT REQUIRED)
 
-    # DLLを実行ディレクトリへコピー
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:freeglut>" "$<TARGET_FILE_DIR:${PROJECT_NAME}>"
-    )
-
-    # Visual Studioのデバッガを直接実行ファイルに設定するためにワーキングディレクトリをセット
-    set_target_properties(${PROJECT_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:${PROJECT_NAME}>")
-
-elseif(UNIX)
-    # Ubuntu Linux等のUNIX環境
-    add_executable(${PROJECT_NAME} ${SOURCES})
-
-    # pkg-config を使ってコンパイルとリンクのオプションを決定
-    find_package(PkgConfig REQUIRED)
-    pkg_search_module(PKG_GLUT REQUIRED glut freeglut)
-    pkg_search_module(PKG_GL REQUIRED gl)
-    pkg_search_module(PKG_GLU REQUIRED glu)
-
-    target_include_directories(${PROJECT_NAME} PRIVATE
-        ${PKG_GLUT_INCLUDE_DIRS}
-        ${PKG_GL_INCLUDE_DIRS}
-        ${PKG_GLU_INCLUDE_DIRS}
-    )
-    target_link_directories(${PROJECT_NAME} PRIVATE
-        ${PKG_GLUT_LIBRARY_DIRS}
-        ${PKG_GL_LIBRARY_DIRS}
-        ${PKG_GLU_LIBRARY_DIRS}
-    )
-    target_compile_options(${PROJECT_NAME} PRIVATE
-        ${PKG_GLUT_CFLAGS_OTHER}
-        ${PKG_GL_CFLAGS_OTHER}
-        ${PKG_GLU_CFLAGS_OTHER}
-    )
-    target_link_libraries(${PROJECT_NAME} PRIVATE
-        ${PKG_GLUT_LIBRARIES}
-        ${PKG_GL_LIBRARIES}
-        ${PKG_GLU_LIBRARIES}
-        m
-    )
+  target_link_libraries(${PROJECT_NAME}
+    PRIVATE
+    ${OPENGL_LIBRARIES}
+    GLUT::GLUT
+    m
+  )
 endif()
